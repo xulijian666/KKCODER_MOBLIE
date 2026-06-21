@@ -6,6 +6,7 @@ class Session {
   final String agentSessionId;
   final String? createdAt;
   final String? lastUserMessageAt;
+  final bool active;
 
   Session({
     required this.id,
@@ -15,6 +16,7 @@ class Session {
     required this.agentSessionId,
     this.createdAt,
     this.lastUserMessageAt,
+    this.active = false,
   });
 
   factory Session.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class Session {
       agentSessionId: json['agentSessionId'] as String? ?? '',
       createdAt: json['createdAt'] as String?,
       lastUserMessageAt: json['lastUserMessageAt'] as String?,
+      active: json['active'] as bool? ?? false,
     );
   }
 }
