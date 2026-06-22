@@ -65,19 +65,24 @@ const _html = '''
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; background: #1E1E1E; overflow: hidden; }
-  #terminal { width: 100%; height: 100%; }
+  #terminal { width: 100%; height: 100%; overflow-x: auto; }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.min.js"></script>
 </head>
 <body>
 <div id="terminal"></div>
 <script>
+  // 固定尺寸，匹配桌面端 PTY 默认 80 列，不随手机屏幕缩放
+  const COLS = 80;
+  const ROWS = 50;
+
   const term = new Terminal({
+    cols: COLS,
+    rows: ROWS,
     cursorBlink: true,
-    fontSize: 14,
+    fontSize: 11,
     fontFamily: 'Cascadia Mono, Fira Code, Consolas, monospace',
     theme: {
       background: '#1E1E1E',
@@ -104,15 +109,9 @@ const _html = '''
     allowProposedApi: true,
   });
 
-  const fitAddon = new FitAddon.FitAddon();
   const webLinksAddon = new WebLinksAddon.WebLinksAddon();
-  term.loadAddon(fitAddon);
   term.loadAddon(webLinksAddon);
   term.open(document.getElementById('terminal'));
-
-  // 初始 fit
-  setTimeout(() => fitAddon.fit(), 100);
-  window.addEventListener('resize', () => fitAddon.fit());
 
   // 写入数据
   window.termWrite = function(data) {
@@ -131,16 +130,7 @@ const _html = '''
     }
   });
 
-  // 窗口大小变化 → 发送给 Flutter
-  term.onResize(function(size) {
-    if (window.FlutterInput) {
-      window.FlutterInput.postMessage(JSON.stringify({
-        type: 'resize',
-        cols: size.cols,
-        rows: size.rows,
-      }));
-    }
-  });
+  // 不发送 resize，PTY 尺寸由桌面端控制
 </script>
 </body>
 </html>

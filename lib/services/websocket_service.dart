@@ -24,9 +24,8 @@ class WebSocketService {
       _channel = WebSocketChannel.connect(Uri.parse(url));
       _channel!.ready.then((_) {
         _setState(WsState.connected);
-        if (_lastSeq > 0) {
-          send(jsonEncode({'type': 'replay', 'last_seq': _lastSeq}));
-        }
+        // 新连接 lastSeq=0 会获取所有缓冲输出，断线重连会补发缺失部分
+        send(jsonEncode({'type': 'replay', 'last_seq': _lastSeq}));
       }).catchError((e) {
         _setState(WsState.disconnected);
         _scheduleReconnect(url);
