@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/session.dart';
 import '../models/server_status.dart';
+import '../models/conversation_message.dart';
 
 class ApiService {
   String _baseUrl = '';
@@ -56,5 +57,23 @@ class ApiService {
     final wsScheme = _baseUrl.startsWith('https') ? 'wss' : 'ws';
     final host = _baseUrl.replaceFirst(RegExp(r'^https?://'), '');
     return '$wsScheme://$host/api/sessions/$sessionId/ws?token=$token';
+  }
+
+  String chatWsUrl(String sessionId, String token) {
+    final wsScheme = _baseUrl.startsWith('https') ? 'wss' : 'ws';
+    final host = _baseUrl.replaceFirst(RegExp(r'^https?://'), '');
+    return '$wsScheme://$host/api/sessions/$sessionId/chat-ws?token=$token';
+  }
+
+  Future<List<ConversationMessage>> getMessages(String sessionId, String token) async {
+    final resp = await http.get(
+      Uri.parse('$_baseUrl/api/sessions/$sessionId/messages'),
+      headers: _headers(token),
+    ).timeout(const Duration(seconds: 10));
+    if (resp.statusCode != 200) {
+      throw Exception('Failed to load messages');
+    }
+    final List<dynamic> data = jsonDecode(resp.body);
+    return data.map((j) => ConversationMessage.fromJson(j)).toList();
   }
 }

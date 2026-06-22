@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/session.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import 'terminal_screen.dart';
+import 'conversation_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
   final ApiService api;
@@ -62,7 +62,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => TerminalScreen(
+        builder: (_) => ConversationScreen(
           api: widget.api,
           storage: widget.storage,
           session: session,
