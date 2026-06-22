@@ -88,7 +88,7 @@ class _PairingScreenState extends State<PairingScreen> {
       widget.onPaired();
     } catch (e) {
       setState(() {
-        _error = 'PIN 码错误或配对失败';
+        _error = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
       });
     }

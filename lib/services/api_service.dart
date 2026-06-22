@@ -34,8 +34,13 @@ class ApiService {
       body: jsonEncode({'pin': pin, 'deviceName': deviceName}),
     ).timeout(const Duration(seconds: 10));
     if (resp.statusCode != 200) {
-      final body = jsonDecode(resp.body);
-      throw Exception(body['error'] ?? 'Pairing failed');
+      try {
+        final body = jsonDecode(resp.body);
+        throw Exception(body['error'] ?? '配对失败');
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('配对失败 (${resp.statusCode}): ${resp.body}');
+      }
     }
     final data = jsonDecode(resp.body);
     return data['token'] as String;
