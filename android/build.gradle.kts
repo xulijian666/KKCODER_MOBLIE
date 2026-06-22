@@ -1,3 +1,15 @@
+// 从 local.properties 读取代理配置
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+    localProperties.forEach { key, value ->
+        if (key.toString().startsWith("systemProp.")) {
+            System.setProperty(key.toString(), value.toString())
+        }
+    }
+}
+
 allprojects {
     repositories {
         maven { url = uri("https://maven.aliyun.com/repository/google") }
