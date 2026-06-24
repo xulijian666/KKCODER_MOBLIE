@@ -30,11 +30,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
     _conv.addListener(_onConversationChanged);
+    _scrollController.addListener(_onScrollChanged);
     _connectChatWs();
   }
 
@@ -45,6 +47,27 @@ class _ConversationScreenState extends State<ConversationScreen> {
     _conv.connect(url);
     // 初始快照会通过 WS 推送，不需要单独调 REST
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    // 距离底部超过 200px 时显示按钮
+    final showButton = (maxScroll - currentScroll) > 200;
+    if (showButton != _showScrollToBottom) {
+      setState(() => _showScrollToBottom = showButton);
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _onConversationChanged() {
@@ -93,6 +116,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   void dispose() {
     _conv.removeListener(_onConversationChanged);
+    _scrollController.removeListener(_onScrollChanged);
     _conv.dispose();
     _inputController.dispose();
     _scrollController.dispose();
@@ -123,6 +147,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
           _buildInputArea(),
         ],
       ),
+      floatingActionButton: _showScrollToBottom
+          ? FloatingActionButton.small(
+              onPressed: _scrollToBottom,
+              backgroundColor: Colors.grey.shade800,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.keyboard_arrow_down),
+            )
+          : null,
     );
   }
 
