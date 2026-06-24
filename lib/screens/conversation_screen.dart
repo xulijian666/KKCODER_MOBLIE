@@ -49,9 +49,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   void _onConversationChanged() {
     if (mounted) setState(() {});
-    // 自动滚动到底部
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+    // 自动滚动到底部（延迟一点等待 UI 更新）
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (mounted && _scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 200),
@@ -66,6 +66,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
     if (text.isEmpty) return;
     _conv.submitPrompt(text);
     _inputController.clear();
+    // 发送后滚动到底部
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _openTerminalDebug() {
@@ -138,6 +148,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _buildRunStatusChip() {
+    final statusText = switch (_conv.runStatus) {
+      'thinking' => '思考中...',
+      'running' => '执行中...',
+      _ => '空闲',
+    };
     final isRunning = _conv.runStatus != 'idle';
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -154,12 +169,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
               width: 0.5,
             ),
           ),
-          child: Text(
-            isRunning ? '执行中...' : '空闲',
-            style: TextStyle(
-              fontSize: 11,
-              color: isRunning ? Colors.orange.shade300 : Colors.green.shade300,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isRunning)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: SizedBox(
+                    width: 10,
+                    height: 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: Colors.orange.shade300,
+                    ),
+                  ),
+                ),
+              Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isRunning ? Colors.orange.shade300 : Colors.green.shade300,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -205,11 +237,57 @@ class _ConversationScreenState extends State<ConversationScreen> {
       );
     }
 
+    final messageCount = _conv.messages.length + (_conv.runStatus != 'idle' ? 1 : 0);
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      itemCount: _conv.messages.length,
-      itemBuilder: (ctx, i) => _buildMessageBubble(_conv.messages[i]),
+      itemCount: messageCount,
+      itemBuilder: (ctx, i) {
+        if (i < _conv.messages.length) {
+          return _buildMessageBubble(_conv.messages[i]);
+        }
+        // 最后一个 item：正在输入指示器
+        return _buildTypingIndicator();
+      },
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(right: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(4),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(color: Colors.grey.shade800),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.orange.shade300,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _conv.runStatus == 'thinking' ? '思考中...' : '执行中...',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -319,6 +397,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _buildInputArea() {
+    final isConnected = _conv.connectionState == ConversationWsState.connected;
+    final canSend = isConnected && _inputController.text.trim().isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
@@ -337,9 +418,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   controller: _inputController,
                   maxLines: null,
                   textInputAction: TextInputAction.newline,
+                  enabled: isConnected,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: '输入问题...',
+                    hintText: isConnected ? '输入问题...' : '连接中...',
                     hintStyle: TextStyle(color: Colors.grey.shade600),
                     filled: true,
                     fillColor: const Color(0xFF2D2D2D),
@@ -356,20 +438,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide(color: Colors.orange.shade700),
                     ),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onChanged: (_) => setState(() {}), // 刷新发送按钮状态
                 ),
               ),
             ),
             const SizedBox(width: 8),
             Material(
-              color: Colors.orange.shade700,
+              color: canSend ? Colors.orange.shade700 : Colors.grey.shade800,
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: _sendPrompt,
-                child: const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Icon(Icons.send, color: Colors.white, size: 20),
+                onTap: canSend ? _sendPrompt : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.send,
+                    color: canSend ? Colors.white : Colors.grey.shade600,
+                    size: 20,
+                  ),
                 ),
               ),
             ),

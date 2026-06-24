@@ -95,22 +95,69 @@ class ConversationService extends ChangeNotifier {
     final seq = msg['seq'] as int? ?? 0;
     if (seq <= _lastSeq) return; // 去重
     _lastSeq = seq;
+
+    final role = msg['role'] as String? ?? '';
+    final text = msg['text'] as String? ?? '';
+    final id = msg['id'] as String? ?? '';
+
+    // 如果是用户消息，检查是否与本地消息重复
+    if (role == 'user') {
+      final localIndex = _messages.indexWhere(
+        (m) => m.id.startsWith('local_') && m.text == text,
+      );
+      if (localIndex != -1) {
+        // 用服务端消息替换本地消息
+        _messages[localIndex] = ConversationMessage(
+          id: id,
+          role: role,
+          text: text,
+          createdAt: msg['created_at'] as String?,
+          seq: seq,
+        );
+        notifyListeners();
+        return;
+      }
+    }
+
+    // 添加新消息
     _messages.add(ConversationMessage(
-      id: msg['id'] as String? ?? '',
-      role: msg['role'] as String? ?? '',
-      text: msg['text'] as String? ?? '',
+      id: id,
+      role: role,
+      text: text,
       createdAt: msg['created_at'] as String?,
       seq: seq,
     ));
+
+    // 收到 assistant 回复，状态变为空闲
+    if (role == 'assistant') {
+      _runStatus = 'idle';
+    }
+
     notifyListeners();
   }
 
   void _handleRunStatus(Map<String, dynamic> msg) {
-    _runStatus = msg['status'] as String? ?? 'idle';
-    notifyListeners();
+    final newStatus = msg['status'] as String? ?? 'idle';
+    if (_runStatus != newStatus) {
+      _runStatus = newStatus;
+      notifyListeners();
+    }
   }
 
   void submitPrompt(String text) {
+    // 立即在本地显示用户消息
+    final localMsg = ConversationMessage(
+      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      role: 'user',
+      text: text,
+      createdAt: DateTime.now().toIso8601String(),
+      seq: _lastSeq + 1,
+    );
+    _messages.add(localMsg);
+    _runStatus = 'thinking';
+    notifyListeners();
+
+    // 发送到桌面端
     send(jsonEncode({'type': 'submit_prompt', 'text': text}));
   }
 

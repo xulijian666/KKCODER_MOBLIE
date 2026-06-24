@@ -43,10 +43,10 @@ class _KkCoderAppState extends State<KkCoderApp> {
       ),
       routes: {
         '/': (_) => _buildHome(),
-        '/pairing': (_) => PairingScreen(
+        '/pairing': (ctx) => PairingScreen(
               api: _api,
               storage: _storage,
-              onPaired: () => Navigator.of(context).pushReplacementNamed('/sessions'),
+              onPaired: () => Navigator.of(ctx).pushReplacementNamed('/sessions'),
             ),
         '/sessions': (_) => SessionsScreen(api: _api, storage: _storage),
       },
@@ -66,10 +66,13 @@ class _KkCoderAppState extends State<KkCoderApp> {
           _loadConnection();
           return SessionsScreen(api: _api, storage: _storage);
         }
-        return PairingScreen(
-          api: _api,
-          storage: _storage,
-          onPaired: () => Navigator.of(ctx).pushReplacementNamed('/sessions'),
+        // 使用 Builder 包裹以获取正确的 Navigator 子 context
+        return Builder(
+          builder: (navigatorContext) => PairingScreen(
+            api: _api,
+            storage: _storage,
+            onPaired: () => Navigator.of(navigatorContext).pushReplacementNamed('/sessions'),
+          ),
         );
       },
     );
