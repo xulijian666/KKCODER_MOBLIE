@@ -81,4 +81,41 @@ class ApiService {
     final List<dynamic> data = jsonDecode(resp.body);
     return data.map((j) => ConversationMessage.fromJson(j)).toList();
   }
+
+  /// 创建新会话
+  Future<void> createSession({
+    required String token,
+    required String id,
+    required String name,
+    required String project,
+    required String path,
+    String type = 'claude',
+  }) async {
+    final resp = await http.post(
+      Uri.parse('$_baseUrl/api/sessions'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'id': id,
+        'name': name,
+        'project': project,
+        'path': path,
+        'type': type,
+      }),
+    ).timeout(const Duration(seconds: 10));
+    if (resp.statusCode != 201) {
+      throw Exception('创建会话失败: ${resp.statusCode}');
+    }
+  }
+
+  /// 请求桌面端启动会话
+  Future<void> spawnSession(String sessionId, String token, {bool isReopen = true}) async {
+    final resp = await http.post(
+      Uri.parse('$_baseUrl/api/sessions/$sessionId/spawn'),
+      headers: _headers(token),
+      body: jsonEncode({'is_reopen': isReopen}),
+    ).timeout(const Duration(seconds: 10));
+    if (resp.statusCode != 202) {
+      throw Exception('启动会话失败: ${resp.statusCode}');
+    }
+  }
 }
