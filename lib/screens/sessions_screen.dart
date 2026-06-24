@@ -166,7 +166,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     return RefreshIndicator(
       onRefresh: _loadSessions,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         itemCount: grouped.length,
         itemBuilder: (ctx, i) {
           final project = grouped.keys.elementAt(i);
@@ -174,21 +174,23 @@ class _SessionsScreenState extends State<SessionsScreen> {
           final activeCount = sessions.where((s) => s.active).length;
 
           return ExpansionTile(
+            dense: true,
             initiallyExpanded: activeCount > 0,
             leading: Icon(
               Icons.folder,
+              size: 20,
               color: activeCount > 0
                   ? Colors.orange.shade400
                   : Colors.grey.shade600,
             ),
             title: Text(
               project,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
               '${sessions.length} 个会话'
               '${activeCount > 0 ? ' · $activeCount 运行中' : ''}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
             children: sessions.map((s) => _buildSessionTile(s)).toList(),
           );
@@ -202,26 +204,27 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final isClaude = session.type == 'claude';
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 0),
       leading: Stack(
         children: [
           CircleAvatar(
-            radius: 18,
+            radius: 16,
             backgroundColor: isClaude
                 ? Colors.orange.shade700
                 : Colors.blue.shade700,
             child: Icon(
               isClaude ? Icons.terminal : Icons.smart_toy,
               color: Colors.white,
-              size: 18,
+              size: 16,
             ),
           ),
           Positioned(
             right: 0,
             bottom: 0,
             child: Container(
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
                 color: isActive ? Colors.green : Colors.grey.shade700,
                 shape: BoxShape.circle,
@@ -240,19 +243,12 @@ class _SessionsScreenState extends State<SessionsScreen> {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: isActive ? null : Colors.grey.shade600,
-          fontSize: 14,
-        ),
-      ),
-      subtitle: Text(
-        isActive ? '运行中' : '未启动',
-        style: TextStyle(
-          fontSize: 12,
-          color: isActive ? Colors.green.shade400 : Colors.grey.shade600,
+          fontSize: 13,
         ),
       ),
       trailing: isActive
-          ? const Icon(Icons.chevron_right, size: 20)
-          : Icon(Icons.lock_outline, size: 16, color: Colors.grey.shade700),
+          ? const Icon(Icons.chevron_right, size: 18)
+          : Icon(Icons.lock_outline, size: 14, color: Colors.grey.shade700),
       onTap: () => _openSession(session),
     );
   }
