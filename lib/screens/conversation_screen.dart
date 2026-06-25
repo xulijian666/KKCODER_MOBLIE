@@ -450,14 +450,20 @@ class _ConversationScreenState extends State<ConversationScreen> {
         margin: const EdgeInsets.only(right: 24),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A2332),
+          // 与 assistant 气泡同色系，仅左边加蓝色竖条区分
+          color: const Color(0xFF1E1E1E),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(16),
             bottomLeft: Radius.circular(16),
             bottomRight: Radius.circular(16),
           ),
-          border: Border.all(color: Colors.blue.shade900.withValues(alpha: 0.5)),
+          border: Border(
+            left: BorderSide(color: Colors.blue.shade700, width: 3),
+            top: BorderSide(color: Colors.grey.shade800),
+            right: BorderSide(color: Colors.grey.shade800),
+            bottom: BorderSide(color: Colors.grey.shade800),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,7 +471,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
             ...lines.map((line) {
               final isSelected = line.contains('❯');
               final isHint = line.contains('💡');
-              // 清理标记符号
               final cleanLine = line.replaceAll('❯', '  ').trim();
               if (cleanLine.isEmpty) return const SizedBox(height: 4);
 
