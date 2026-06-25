@@ -441,8 +441,18 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _buildChoiceCardBubble(ConversationMessage msg) {
-    // 解析卡片文本，高亮选中项
+    // 防护：空内容降级为普通 assistant 气泡
+    if (msg.text.trim().isEmpty) {
+      return _buildAssistantBubble(msg);
+    }
+
     final lines = msg.text.split('\n');
+    // 过滤空行，保留有意义的内容
+    final contentLines = lines.where((l) => l.trim().isNotEmpty).toList();
+    if (contentLines.isEmpty) {
+      return _buildAssistantBubble(msg);
+    }
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -450,7 +460,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
         margin: const EdgeInsets.only(right: 24),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          // 与 assistant 气泡同色系，仅左边加蓝色竖条区分
           color: const Color(0xFF1E1E1E),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
@@ -467,31 +476,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ...lines.map((line) {
-              final isSelected = line.contains('❯');
-              final isHint = line.contains('💡');
-              final cleanLine = line.replaceAll('❯', '  ').trim();
-              if (cleanLine.isEmpty) return const SizedBox(height: 4);
+          children: contentLines.map((line) {
+            final isSelected = line.contains('❯');
+            final isHint = line.contains('💡');
+            final cleanLine = line.replaceAll('❯', '  ').trim();
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Text(
-                  cleanLine,
-                  style: TextStyle(
-                    color: isHint
-                        ? Colors.grey.shade500
-                        : isSelected
-                            ? Colors.blue.shade300
-                            : const Color(0xFFD4D4D4),
-                    fontSize: isHint ? 12 : 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontStyle: isHint ? FontStyle.italic : FontStyle.normal,
-                  ),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                cleanLine,
+                style: TextStyle(
+                  color: isHint
+                      ? Colors.grey.shade500
+                      : isSelected
+                          ? Colors.blue.shade300
+                          : const Color(0xFFD4D4D4),
+                  fontSize: isHint ? 12 : 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontStyle: isHint ? FontStyle.italic : FontStyle.normal,
                 ),
-              );
-            }),
-          ],
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
