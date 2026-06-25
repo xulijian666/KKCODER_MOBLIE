@@ -69,6 +69,9 @@ class ConversationService extends ChangeNotifier {
         case 'run_status':
           _handleRunStatus(msg);
           break;
+        case 'choice_card':
+          _handleChoiceCard(msg);
+          break;
         case 'replay_complete':
           // replay 完成，无需特殊处理
           break;
@@ -142,6 +145,24 @@ class ConversationService extends ChangeNotifier {
       _runStatus = newStatus;
       notifyListeners();
     }
+  }
+
+  void _handleChoiceCard(Map<String, dynamic> msg) {
+    final text = msg['text'] as String? ?? '';
+    final createdAt = msg['created_at'] as String?;
+    if (text.isEmpty) return;
+
+    // 作为特殊 assistant 消息添加到列表
+    _messages.add(ConversationMessage(
+      id: 'choice_${DateTime.now().millisecondsSinceEpoch}',
+      role: 'choice_card',
+      text: text,
+      createdAt: createdAt,
+      seq: _lastSeq + 1,
+    ));
+    _lastSeq++;
+    _runStatus = 'idle';
+    notifyListeners();
   }
 
   void submitPrompt(String text) {

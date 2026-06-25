@@ -332,9 +332,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Widget _buildMessageBubble(ConversationMessage msg) {
     final isUser = msg.role == 'user';
+    final isChoiceCard = msg.role == 'choice_card';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: isUser ? _buildUserBubble(msg) : _buildAssistantBubble(msg),
+      child: isUser
+          ? _buildUserBubble(msg)
+          : isChoiceCard
+              ? _buildChoiceCardBubble(msg)
+              : _buildAssistantBubble(msg),
     );
   }
 
@@ -429,6 +434,58 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChoiceCardBubble(ConversationMessage msg) {
+    // 解析卡片文本，高亮选中项
+    final lines = msg.text.split('\n');
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(right: 24),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A2332),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(4),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(color: Colors.blue.shade900.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...lines.map((line) {
+              final isSelected = line.contains('❯');
+              final isHint = line.contains('💡');
+              // 清理标记符号
+              final cleanLine = line.replaceAll('❯', '  ').trim();
+              if (cleanLine.isEmpty) return const SizedBox(height: 4);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  cleanLine,
+                  style: TextStyle(
+                    color: isHint
+                        ? Colors.grey.shade500
+                        : isSelected
+                            ? Colors.blue.shade300
+                            : const Color(0xFFD4D4D4),
+                    fontSize: isHint ? 12 : 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontStyle: isHint ? FontStyle.italic : FontStyle.normal,
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
