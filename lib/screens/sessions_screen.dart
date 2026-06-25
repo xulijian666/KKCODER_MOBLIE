@@ -60,8 +60,8 @@ class _SessionsScreenState extends State<SessionsScreen> {
     _navigateToConversation(session);
   }
 
-  void _navigateToConversation(Session session) {
-    Navigator.of(context).push(
+  Future<void> _navigateToConversation(Session session) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ConversationScreen(
           api: widget.api,
@@ -70,6 +70,8 @@ class _SessionsScreenState extends State<SessionsScreen> {
         ),
       ),
     );
+    // 从对话页面返回后刷新列表，获取最新思考状态
+    _loadSessions();
   }
 
   /// 唤醒非活跃会话
@@ -401,6 +403,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final isActive = session.active;
     final isClaude = session.type == 'claude';
     final isOperating = _operatingSessionId == session.id;
+    final isThinking = isActive && session.runStatus == 'thinking';
 
     return ListTile(
       dense: true,
@@ -434,7 +437,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: isActive ? Colors.green : Colors.grey.shade700,
+                color: isThinking
+                    ? Colors.orange.shade400
+                    : isActive
+                        ? Colors.green
+                        : Colors.grey.shade700,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Theme.of(context).scaffoldBackgroundColor,
@@ -445,14 +452,39 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ),
         ],
       ),
-      title: Text(
-        session.name.isNotEmpty ? session.name : session.id,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: isActive ? null : Colors.grey.shade600,
-          fontSize: 13,
-        ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              session.name.isNotEmpty ? session.name : session.id,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isActive ? null : Colors.grey.shade600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (isThinking) ...[
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: Colors.orange.shade400,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '思考中',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.orange.shade400,
+              ),
+            ),
+          ],
+        ],
       ),
       trailing: isActive
           ? const Icon(Icons.chevron_right, size: 18)

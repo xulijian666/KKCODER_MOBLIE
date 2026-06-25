@@ -70,11 +70,18 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
+  bool _isInitialLoad = true;
+
   void _onConversationChanged() {
     if (mounted) setState(() {});
-    // 自动滚动到底部（延迟一点等待 UI 更新）
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (mounted && _scrollController.hasClients) {
+    // 等待 UI 渲染完成后滚动到底部
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (_isInitialLoad) {
+        // 首次加载：直接跳到底部（无动画），避免大量消息时定位不准
+        _isInitialLoad = false;
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      } else {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 200),

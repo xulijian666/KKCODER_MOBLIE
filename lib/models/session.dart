@@ -8,6 +8,7 @@ class Session {
   final String? createdAt;
   final String? lastUserMessageAt;
   final bool active;
+  final String runStatus; // "thinking" | "idle"
 
   Session({
     required this.id,
@@ -19,6 +20,7 @@ class Session {
     this.createdAt,
     this.lastUserMessageAt,
     this.active = false,
+    this.runStatus = 'idle',
   });
 
   factory Session.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Session {
       createdAt: json['createdAt'] as String?,
       lastUserMessageAt: json['lastUserMessageAt'] as String?,
       active: json['active'] as bool? ?? false,
+      runStatus: json['runStatus'] as String? ?? 'idle',
     );
   }
 }
